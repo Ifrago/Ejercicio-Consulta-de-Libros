@@ -1,5 +1,6 @@
 package edu.upc.eetac.dsa.ifrago.books.api.model;
 
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
@@ -15,7 +16,7 @@ public class Books {
 	Date editiondate=null;
 	Date printdate=null;
 	String editorial=null;
-	List<Reviews> reviews=null;
+	List<Reviews> reviews= new ArrayList<Reviews>();
 	
 	
 	public int getId() {
@@ -71,6 +72,9 @@ public class Books {
 	}
 	public void addReviews(Reviews review) {
 		reviews.add(review);
+	}
+	public void setReviews(List<Reviews> review) {
+		this.reviews= review;
 	}
 
 	

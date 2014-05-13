@@ -15,6 +15,7 @@ import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
+import javax.ws.rs.QueryParam;
 import javax.ws.rs.ServerErrorException;
 import javax.ws.rs.core.CacheControl;
 import javax.ws.rs.core.Context;
@@ -26,6 +27,7 @@ import javax.ws.rs.core.SecurityContext;
 import edu.upc.eetac.dsa.ifrago.books.api.DataSourceSPA;
 import edu.upc.eetac.dsa.ifrago.books.api.MediaType;
 import edu.upc.eetac.dsa.ifrago.books.api.model.Books;
+import edu.upc.eetac.dsa.ifrago.books.api.model.BooksCollection;
 import edu.upc.eetac.dsa.ifrago.books.api.model.Reviews;
 
 @Path("/books")
@@ -35,8 +37,97 @@ public class BooksResource {
 	SecurityContext security;
 
 	@GET
-	public String getBooks() {
-		return "getBooks()";
+	@Produces(MediaType.BOOKS_API_BOOKS_COLLECTION)
+	public BooksCollection getBooks(@QueryParam("length") int length, @QueryParam("after") int after) {
+		
+		BooksCollection books = new BooksCollection ();
+		
+		Connection conn = null;
+		try {
+			conn = ds.getConnection();// Conectamos con la base de datos
+		} catch (SQLException e) {
+			throw new ServerErrorException("Could not connect to the database",
+					Response.Status.SERVICE_UNAVAILABLE);
+		}
+		
+		PreparedStatement stmt=null;
+		
+		try{
+			boolean updateFromLast= after>0;
+			stmt = conn.prepareStatement(buildGetBooksQuery(updateFromLast));// Para preparar la query con el metodo buildGetStingsQuery ( metodo de abajo )
+			if (updateFromLast) {
+				if(length==0){
+					stmt.setInt(1, after);
+					stmt.setInt(2,5);
+				}else{
+					stmt.setInt(1, after);
+					stmt.setInt(2,length);
+				}
+			}else{
+				
+				if(length==0)
+					stmt.setInt(1,5);
+				else
+					stmt.setInt(1,length);
+			}
+			
+			ResultSet rs = stmt.executeQuery();
+			while (rs.next()){
+				Books book = new Books();
+				
+				book.setId(rs.getInt("bookid"));
+				book.setTitle(rs.getString("title"));
+				book.setAuthor(rs.getString("author"));
+				book.setLanguage(rs.getString("language"));
+				book.setEdition(rs.getString("edition"));
+				book.setEditiondate(rs.getDate("editiondate"));
+				book.setPrintdate(rs.getDate("printdate"));
+				book.setEditorial(rs.getString("editorial"));
+				
+				//Nos encargamos de las reviews de cada libro
+				PreparedStatement stmtr=null;
+				stmtr=conn.prepareStatement(buildGetReviewBookByIdQuery());
+				stmtr.setInt(1, book.getId());
+				
+				ResultSet rsr = stmtr.executeQuery();
+				
+				while(rsr.next()) {							
+					Reviews review = new Reviews();
+					review.setDateupdate(rsr.getDate("dateupdate"));
+					review.setText(rsr.getString("text"));
+					review.setUsername(rsr.getString("username"));
+					review.setBookid(rsr.getInt("bookid"));
+					review.setReviewsid(rsr.getInt("reviewsid"));
+					
+					book.addReviews(review);
+			
+				}
+				
+				books.addBook(book);//Añadimos toda la info dellibro ( inclusive sus reviews ).
+							
+			}
+			
+		} catch (SQLException e) {
+			throw new ServerErrorException(e.getMessage(),
+					Response.Status.INTERNAL_SERVER_ERROR);
+		} finally {
+			try {
+				if (stmt != null)
+					stmt.close();
+				conn.close();
+			} catch (SQLException e) {
+			}
+		}
+
+		return books;
+	}
+
+	private String buildGetBooksQuery(boolean updateFromLast) {
+		
+		if(updateFromLast)
+			return "select * from books where bookid>? limit ?;";
+		else
+			return "select *from books limit ?;";
 	}
 
 	@POST
@@ -60,26 +151,21 @@ public class BooksResource {
 		//Calculamos ETag de la ultima modificación de la reseña
 		
 		String s= book.getReviews()+book.getAuthor()+book.getEdition()+"21";
-		
-		System.out.println("Construimos el string para el hash");
+
 		
 		EntityTag eTag = new EntityTag(Long.toString(s.hashCode()));
 		
-		System.out.println("Ya hemos hecho el hash");
 		
 		//Comparamos el eTag creado con el que viene de la peticiOn HTTP
 		Response.ResponseBuilder rb = request.evaluatePreconditions(eTag);// comparamos
 		
-		System.out.println("Ya hemos hecho el eTag");
 		if (rb != null) {// Si el resultado no es nulo, significa que no ha sido modificado el contenido ( o es la 1º vez )
 				return rb.cacheControl(cc).tag(eTag).build();
 		}
 
-		System.out.println("Ya hemos hmirado el cache");
 		
 		// Si es nulo construimos la respuesta de cero.
 		rb = Response.ok(book).cacheControl(cc).tag(eTag);
-		System.out.println("Ya hemos hmirado el cache2");
 		
 		return rb.build();
 		
@@ -112,7 +198,8 @@ public class BooksResource {
 				book.setEdition(rs.getString("edition"));
 				book.setEditiondate(rs.getDate("editiondate"));
 				book.setPrintdate(rs.getDate("printdate"));
-				book.setEditorial(rs.getString("editorial"));									
+				book.setEditorial(rs.getString("editorial"));
+				
 			}else{
 				throw new NotFoundException("There's no sting with stingid ="
 						+ bookid);
@@ -123,19 +210,17 @@ public class BooksResource {
 			stmtr.setInt(1, Integer.valueOf(bookid));
 			ResultSet rsr = stmtr.executeQuery();
 			
-			if(rsr.next()) {							
+			while(rsr.next()) {							
 				Reviews review = new Reviews();
 				review.setDateupdate(rsr.getDate("dateupdate"));
 				review.setText(rsr.getString("text"));
 				review.setUsername(rsr.getString("username"));
+				review.setBookid(rsr.getInt("bookid"));
+				review.setReviewsid(rsr.getInt("reviewsid"));
 				
 				book.addReviews(review);
-				
-					
-			}/*else{
-				throw new NotFoundException("There's no sting with stingid ="
-						+ bookid);
-			}*/
+		
+			}
 			
 			
 			
@@ -157,7 +242,7 @@ public class BooksResource {
 	}
 	
 	private String buildGetReviewBookByIdQuery() {
-		return "select username, text, dateupdate from reviews  where bookid=?;";
+		return "select * from reviews  where bookid=?;";
 	}
 
 	private String buildGetBookByIdQuery() {
