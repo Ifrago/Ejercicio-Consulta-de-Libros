@@ -163,7 +163,7 @@ public class BooksResource {
 			stmt.setString(4, book.getEdition());
 			//stmt.setDate(5, book.getEditiondate());
 			//stmt.setDate(6, book.getPrintdate());
-			stmt.setString(7, book.getEditorial());
+			stmt.setString(5, book.getEditorial());
 			
 			
 			stmt.executeUpdate();// Ejecuto la actualización
@@ -195,7 +195,7 @@ public class BooksResource {
 	}
 
 	private String buildInsertBook() {
-		return "insert into books (title,author,language,edition,editiondate,printdate,editorial) values(?,?,?,?,?,?,?); ";
+		return "insert into books (title,author,language,edition,editorial) values(?,?,?,?,?); ";
 	}
 
 	private void ValidateBook(Books book) {//condiciones para poder ingresar enla BD
@@ -205,14 +205,14 @@ public class BooksResource {
 			throw new BadRequestException("Author can't be null.");
 		if (book.getEdition() == null)
 			throw new BadRequestException("Edition can't be null.");
-		if (book.getEditiondate() == null)
-			throw new BadRequestException("Editionale can't be null.");
+		//if (book.getEditiondate() == null)
+		//	throw new BadRequestException("Editionale can't be null.");
 		if (book.getLanguage() == null)
 			throw new BadRequestException("Language can't be null.");
 		if (book.getEditorial() == null)
 			throw new BadRequestException("Language can't be null.");
-		if (book.getPrintdate() == null)
-			throw new BadRequestException("Printdate can't be null.");
+		//if (book.getPrintdate() == null)
+			//throw new BadRequestException("Printdate can't be null.");
 		if (book.getTitle().length() > 80)
 			throw new BadRequestException(
 					"Title can't be greater than 80 characters.");
