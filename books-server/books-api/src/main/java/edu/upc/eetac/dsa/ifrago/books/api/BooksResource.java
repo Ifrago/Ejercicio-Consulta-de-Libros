@@ -1,13 +1,17 @@
 package edu.upc.eetac.dsa.ifrago.books.api;
 
 
+import java.awt.print.Book;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.List;
 
 import javax.sql.DataSource;
+import javax.ws.rs.BadRequestException;
+import javax.ws.rs.Consumes;
 import javax.ws.rs.ForbiddenException;
 import javax.ws.rs.GET;
 import javax.ws.rs.NotFoundException;
@@ -131,10 +135,100 @@ public class BooksResource {
 	}
 
 	@POST
-	public String createBook() {
+	@Consumes(MediaType.BOOKS_API_BOOKS)
+	@Produces(MediaType.BOOKS_API_BOOKS)
+	public Books createBook(Books book) {//Dates can are null
 		if (!security.isUserInRole("admin"))
 			throw new ForbiddenException("You are not allowed to create a book");
-		return "createBook()";
+		
+		ValidateBook(book);
+		
+		Connection conn = null;
+		try {
+			conn = ds.getConnection();
+		} catch (SQLException e) {
+			throw new ServerErrorException("Could not connect to the database",
+					Response.Status.SERVICE_UNAVAILABLE);
+		}
+		
+		PreparedStatement stmt = null;
+		
+		try{
+			String sql= buildInsertBook();
+			stmt=conn.prepareStatement(sql,Statement.RETURN_GENERATED_KEYS);
+			
+			stmt.setString(1, book.getTitle());
+			stmt.setString(2, book.getAuthor());
+			stmt.setString(3, book.getLanguage());
+			stmt.setString(4, book.getEdition());
+			//stmt.setDate(5, book.getEditiondate());
+			//stmt.setDate(6, book.getPrintdate());
+			stmt.setString(7, book.getEditorial());
+			
+			
+			stmt.executeUpdate();// Ejecuto la actualización
+			ResultSet rs = stmt.getGeneratedKeys();// query para saber si ha ido
+													// bien la inserción
+			if (rs.next()) {// Si ha ido bien me da la id del sting
+				int bookid = rs.getInt(1);
+
+				book = getBookFromDatabase(Integer.toString(bookid));
+			} else {
+				throw new BadRequestException("Can't create a Book");
+			}
+			
+			
+		} catch (SQLException e) {
+			throw new ServerErrorException(e.getMessage(),
+					Response.Status.INTERNAL_SERVER_ERROR);
+		} finally {
+			try {
+				if (stmt != null)
+					stmt.close();
+				conn.close();
+			} catch (SQLException e) {
+			}
+		}
+
+		return book;
+		
+	}
+
+	private String buildInsertBook() {
+		return "insert into books (title,author,language,edition,editiondate,printdate,editorial) values(?,?,?,?,?,?,?); ";
+	}
+
+	private void ValidateBook(Books book) {//condiciones para poder ingresar enla BD
+		if (book.getTitle() == null)
+			throw new BadRequestException("Title can't be null.");
+		if (book.getAuthor() == null)
+			throw new BadRequestException("Author can't be null.");
+		if (book.getEdition() == null)
+			throw new BadRequestException("Edition can't be null.");
+		if (book.getEditiondate() == null)
+			throw new BadRequestException("Editionale can't be null.");
+		if (book.getLanguage() == null)
+			throw new BadRequestException("Language can't be null.");
+		if (book.getEditorial() == null)
+			throw new BadRequestException("Language can't be null.");
+		if (book.getPrintdate() == null)
+			throw new BadRequestException("Printdate can't be null.");
+		if (book.getTitle().length() > 80)
+			throw new BadRequestException(
+					"Title can't be greater than 80 characters.");
+		if (book.getAuthor().length() > 20)
+			throw new BadRequestException(
+					"Author can't be greater than 20 characters.");
+		if (book.getLanguage().length() > 15)
+			throw new BadRequestException(
+					"Language can't be greater than 15 characters.");
+		if (book.getEdition().length() > 20)
+			throw new BadRequestException(
+					"Edition can't be greater than 20 characters.");
+		if (book.getEditorial().length() > 20)
+			throw new BadRequestException(
+					"Editorial can't be greater than 20 characters.");
+		
 	}
 
 	@GET
@@ -254,6 +348,7 @@ public class BooksResource {
 	public String createReview(@PathParam("bookid") String bookid) {
 		if (!security.isUserInRole("registered"))
 			throw new ForbiddenException("You are not allowed to create reviews for a book");
+		
 		return "create review for bookid = " + bookid;
 	}
 }

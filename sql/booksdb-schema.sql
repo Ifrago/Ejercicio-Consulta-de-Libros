@@ -23,8 +23,8 @@ create table books(
 	author		varchar(20) not null,
 	language	varchar(15) not null,
 	edition		varchar(20) not null,
-	editiondate	date not null,
-	printdate	date not null,
+	editiondate	date,
+	printdate	date,
 	editorial	varchar(20) not null
 	
 );
