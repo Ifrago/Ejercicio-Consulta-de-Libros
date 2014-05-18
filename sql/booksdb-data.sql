@@ -15,7 +15,7 @@ insert into books (title,author,language,edition,editiondate,printdate,editorial
 insert into books (title,author,language,edition,editiondate,printdate,editorial) values('Peter Jackson: La batalla del laberinto', 'Rick Riordan','Castellano','quinta', '2011-10-15','2012-01-19','Salamandra');
 insert into books (title,author,language,edition,editiondate,printdate,editorial) values('Peter Jackson: El ultimo heroe del Olimpo', 'Rick Riordan','Castellano','quinta', '2013-10-15','2014-01-19','Salamandra');
 
-insert into reviews (reviewsid,username,dateupdate,text,bookid) values (1,'alicia', '2013-12-09','Buena saga, se lee muy rapido',5);
-insert into reviews (reviewsid,username,dateupdate,text,bookid) values (2,'alicia', '2012-10-09','Cada libro termina mejor',3);
-insert into reviews (reviewsid,username,dateupdate,text,bookid) values (3,'blas', '2013-12-09','La saga es entretenida, no dificil de leer',5);
-insert into reviews (reviewsid,username,dateupdate,text,bookid) values (4,'blas', '2012-12-09','De los tres que he leido, es el mas flojo, pero no significa que no este muy bien',2);
+insert into reviews (username,dateupdate,text,bookid) values ('alicia', '2013-12-09','Buena saga, se lee muy rapido',5);
+insert into reviews (username,dateupdate,text,bookid) values ('alicia', '2012-10-09','Cada libro termina mejor',3);
+insert into reviews (username,dateupdate,text,bookid) values ('blas', '2013-12-09','La saga es entretenida, no dificil de leer',5);
+insert into reviews (username,dateupdate,text,bookid) values ('blas', '2012-12-09','De los tres que he leido, es el mas flojo, pero no significa que no este muy bien',2);

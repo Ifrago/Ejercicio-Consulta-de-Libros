@@ -30,9 +30,8 @@ create table books(
 );
 
 create table reviews(
-	reviewsid	int not null,
 	username	varchar(20) not null,
-	dateupdate	date not null,
+	dateupdate	date ,
 	text		varchar(500),
 	bookid		int not null,
 	foreign key (username) references users(username),
