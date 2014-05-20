@@ -155,20 +155,51 @@ public class BooksResource {
 					Response.Status.SERVICE_UNAVAILABLE);
 		}
 		
+		
 		PreparedStatement stmt = null;
 		
 		try{
-			String sql= buildInsertBook();
+			String sql= buildInsertBook(book.getEditiondate(), book.getPrintdate());
 			stmt=conn.prepareStatement(sql,Statement.RETURN_GENERATED_KEYS);
 			
-			stmt.setString(1, book.getTitle());
-			stmt.setString(2, book.getAuthor());
-			stmt.setString(3, book.getLanguage());
-			stmt.setString(4, book.getEdition());
-			//stmt.setDate(5, book.getEditiondate());
-			//stmt.setDate(6, book.getPrintdate());
-			stmt.setString(5, book.getEditorial());
+			System.out.println("Printdate: "+book.getPrintdate());
+			System.out.println("Editiondate: "+book.getEditiondate());
 			
+			if(book.getEditiondate()!=null &&  book.getPrintdate()!=null ){
+				stmt.setString(1, book.getTitle());
+				stmt.setString(2, book.getAuthor());
+				stmt.setString(3, book.getLanguage());
+				stmt.setString(4, book.getEdition());
+				stmt.setString(5, book.getEditorial());
+				stmt.setDate(6, (Date) book.getPrintdate());
+				stmt.setDate(7, (Date) book.getEditiondate());
+			}
+			
+			if(book.getEditiondate()==null &&  book.getPrintdate()!=null ){
+				stmt.setString(1, book.getTitle());
+				stmt.setString(2, book.getAuthor());
+				stmt.setString(3, book.getLanguage());
+				stmt.setString(4, book.getEdition());
+				stmt.setString(5, book.getEditorial());
+				stmt.setDate(6, (Date) book.getPrintdate());
+			}
+			
+			if(book.getEditiondate()!=null &&  book.getPrintdate()==null ){
+				stmt.setString(1, book.getTitle());
+				stmt.setString(2, book.getAuthor());
+				stmt.setString(3, book.getLanguage());
+				stmt.setString(4, book.getEdition());
+				stmt.setString(5, book.getEditorial());
+				stmt.setDate(7, (Date) book.getEditiondate());
+			}
+			
+			if(book.getEditiondate()==null &&  book.getPrintdate()==null ){
+				stmt.setString(1, book.getTitle());
+				stmt.setString(2, book.getAuthor());
+				stmt.setString(3, book.getLanguage());
+				stmt.setString(4, book.getEdition());
+				stmt.setString(5, book.getEditorial());
+			}
 			
 			stmt.executeUpdate();// Ejecuto la actualización
 			ResultSet rs = stmt.getGeneratedKeys();// query para saber si ha ido
@@ -198,8 +229,18 @@ public class BooksResource {
 		
 	}
 
-	private String buildInsertBook() {
-		return "insert into books (title,author,language,edition,editorial) values(?,?,?,?,?); ";
+	private String buildInsertBook(java.util.Date editiondate, java.util.Date printdate) {
+		
+		
+		if(editiondate!=null && printdate!=null)
+			return "insert into books (title,author,language,edition,editorial,printdate,editiondate) values(?,?,?,?,?,?,?); ";		
+		if(editiondate!=null && printdate==null)
+			return "insert into books (title,author,language,edition,editorial,editiondate) values(?,?,?,?,?,?); ";		
+		if(editiondate==null && printdate!=null)
+			return "insert into books (title,author,language,edition,editorial,printdate) values(?,?,?,?,?,?); ";
+		else
+			return "insert into books (title,author,language,edition,editorial) values(?,?,?,?,?); ";
+	
 	}
 
 	private void ValidateBook(Books book) {//condiciones para poder ingresar enla BD
@@ -828,8 +869,8 @@ public class BooksResource {
 			
 			stmt.setString(1, review.getText());
 			stmt.setDate(2, (Date) review.getDateupdate());
-			stmt.setInt(3, review.getBookid());
-			stmt.setString(4, review.getUsername());
+			stmt.setInt(3, bookid);
+			stmt.setString(4, username);
 
 			int rows = stmt.executeUpdate();
 			if (rows == 1)
