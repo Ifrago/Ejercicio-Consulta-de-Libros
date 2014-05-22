@@ -4,10 +4,23 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
+import javax.ws.rs.core.Link;
+
+import org.glassfish.jersey.linking.Binding;
+import org.glassfish.jersey.linking.InjectLink;
+import org.glassfish.jersey.linking.InjectLinks;
+import org.glassfish.jersey.linking.InjectLink.Style;
+
+import edu.upc.eetac.dsa.ifrago.books.api.BooksResource;
+import edu.upc.eetac.dsa.ifrago.books.api.MediaType;
+
+
 
 
 public class Books {
-	
+	@InjectLinks({
+		@InjectLink(resource = BooksResource.class, style = Style.ABSOLUTE, rel = "self edit", title = "Book", type = MediaType.BOOKS_API_BOOKS, method = "getBook", bindings = @Binding(name = "bookid", value = "${instance.id}")) })
+	private List<Link> links;
 	int id=0;
 	String title=null;
 	String author= null;
@@ -75,6 +88,12 @@ public class Books {
 	}
 	public void setReviews(List<Reviews> review) {
 		this.reviews= review;
+	}
+	public List<Link> getLinks() {
+		return links;
+	}
+	public void setLinks(List<Link> links) {
+		this.links = links;
 	}
 
 	

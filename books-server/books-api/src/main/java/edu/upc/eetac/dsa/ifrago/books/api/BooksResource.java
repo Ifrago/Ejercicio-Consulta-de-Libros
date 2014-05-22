@@ -33,6 +33,10 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.SecurityContext;
 
 
+
+
+
+
 import edu.upc.eetac.dsa.ifrago.books.api.DataSourceSPA;
 import edu.upc.eetac.dsa.ifrago.books.api.MediaType;
 import edu.upc.eetac.dsa.ifrago.books.api.model.Books;
@@ -44,13 +48,15 @@ public class BooksResource {
 	private DataSource ds = DataSourceSPA.getInstance().getDataSource();
 	@Context
 	SecurityContext security;
+	
+	private boolean administrator, registered;
 
 	@GET
 	@Produces(MediaType.BOOKS_API_BOOKS_COLLECTION)
 	public BooksCollection getBooks(@QueryParam("length") int length, @QueryParam("after") int after) {
-		
+
 		BooksCollection books = new BooksCollection ();
-		
+
 		Connection conn = null;
 		try {
 			conn = ds.getConnection();// Conectamos con la base de datos
@@ -102,6 +108,7 @@ public class BooksResource {
 				
 				while(rsr.next()) {							
 					Reviews review = new Reviews();
+					review.setReviewid(rsr.getInt("reviewid"));
 					review.setDateupdate(rsr.getDate("dateupdate"));
 					review.setText(rsr.getString("text"));
 					review.setUsername(rsr.getString("username"));
@@ -327,6 +334,7 @@ public class BooksResource {
 		try{
 			stmt=conn.prepareStatement(buildGetBookByIdQuery());
 			stmt.setInt(1, Integer.valueOf(bookid));
+			System.out.println("Query completa: "+stmt);
 			ResultSet rs = stmt.executeQuery();
 			
 			if(rs.next()) {
@@ -351,6 +359,7 @@ public class BooksResource {
 			
 			while(rsr.next()) {							
 				Reviews review = new Reviews();
+				review.setReviewid(rsr.getInt("reviewid"));
 				review.setDateupdate(rsr.getDate("dateupdate"));
 				review.setText(rsr.getString("text"));
 				review.setUsername(rsr.getString("username"));
@@ -390,7 +399,7 @@ public class BooksResource {
 	@GET
 	@Path("/search")
 	@Produces(MediaType.BOOKS_API_BOOKS_COLLECTION)
-	public BooksCollection searchByAuthorBook (@QueryParam("author") String author,@QueryParam("length") int length){
+	public BooksCollection searchByAuthorBook (@QueryParam("author") String author,@QueryParam("tittle") String tittle,@QueryParam("length") int length){
 		BooksCollection books = new BooksCollection();
 		
 		Connection conn = null;
@@ -401,19 +410,48 @@ public class BooksResource {
 					Response.Status.SERVICE_UNAVAILABLE);
 		}
 		
-		String sql =buildSearchByAhutor(author);
+		String sql =buildSearchByAhutor(author, tittle);
 		PreparedStatement stmt = null;
 		
 		
 		try {
 			System.out.println("Query a construir: "+sql);
 			stmt = conn.prepareStatement(sql);
-			if (length != 0) {		
-				stmt.setString(1,"%"+author+"%");
-				stmt.setInt(2, length);// Limitamos el numero de resultados,				
+			if (length != 0) {
+				if (author != null && tittle != null) {
+					stmt.setString(1,"%"+author+"%");
+					stmt.setString(2, "%"+tittle+"%");
+					stmt.setInt(3, length);// Limitamos el numero de resultados,
+											// es el parametro 3
+				} else if (author == null && tittle != null) {
+					System.out.println("Estamos en Sub=null, Cont!= null, length!=0");
+					stmt.setString(1, "%"+tittle+"%");
+					stmt.setInt(2, length);// Limitamos el numero de resultados,
+											// es el parametro 2
+				} else if (author != null && tittle == null) {
+					System.out.println("Estamos en Sub=null, Cont= null, length!=0");
+					stmt.setString(1, "%"+author+"%");
+					stmt.setInt(2, length);// Limitamos el numero de resultados,
+											// es el parametro 2
+				}
 			} else if (length==0) {
-				stmt.setString(1,"%"+author+"%");
-				stmt.setInt(2, 3);// Limitamos el numero de resultados,
+				if (author != null && tittle != null) {
+					System.out.println("Estamos en Sub!=null, Cont!= null, length=0-> 5");
+					stmt.setString(1, "%"+author+"%");
+					stmt.setString(2, "%"+tittle+"%");
+					stmt.setInt(3, 5);// Limitamos el numero de resultados a 5,
+										// es el parametro 3
+				} else if (author == null && tittle != null) {
+					System.out.println("Estamos en Sub=null, Cont!= null, length=0-> 5");
+					stmt.setString(1, "%"+tittle+"%");
+					stmt.setInt(2, 5);// Limitamos el numero de resultados,
+											// es el parametro 2
+				} else if (author != null && tittle == null) {
+					System.out.println("Estamos en Sub!=null, Cont= null, length=0-> 5");
+					stmt.setString(1, "%"+author+"%");
+					stmt.setInt(2, 5);// Limitamos el numero de resultados,
+											// es el parametro 2
+				}
 			}
 			
 			System.out.println("Query salida: "+ stmt);
@@ -440,6 +478,7 @@ public class BooksResource {
 				
 				while(rsr.next()) {							
 					Reviews review = new Reviews();
+					review.setReviewid(rsr.getInt("reviewid"));
 					review.setDateupdate(rsr.getDate("dateupdate"));
 					review.setText(rsr.getString("text"));
 					review.setUsername(rsr.getString("username"));
@@ -467,12 +506,33 @@ public class BooksResource {
 		return books;
 	}
 	
-	private String buildSearchByAhutor(String author) {
+	private String buildSearchByAhutor(String author, String tittle) {
+
+		System.out.println("Author: "+ author+ " Tittle: "+tittle);
 		
-		if(author==null)
-			throw new BadRequestException("Se tiene que poner algo para buscar por el autor.");
-		else
-			return"SELECT * FROM books WHERE  author LIKE ? LIMIT ? ;";
+		String query = null;
+		if (author != null && tittle != null)
+			// QUERY: seleccionar toda la tabala sting y columna name de tabal
+			// user donde aparezca algo del subject y del content que nos pasan.
+			return "SELECT  * FROM books  WHERE  author LIKE ? OR title LIKE ? LIMIT ? ;";
+
+		if (author == null && tittle != null)
+			// QUERY: seleccionar toda la tabala sting y columna name de tabal
+			// user donde aparezca algo del content que nos pasan.
+			return "SELECT  * FROM books  WHERE   title LIKE ? LIMIT ? ;";
+
+		if (author != null && tittle == null)
+			// QUERY: seleccionar toda la tabala sting y columna name de tabal
+			// user donde aparezca algo del subject que nos pasan.
+			return "SELECT  * FROM books  WHERE  author LIKE ? LIMIT ? ;";
+
+		if (author == null && tittle == null)// En este caso no se puede
+												// buscar nada ya que nos han
+												// devuelto los dos paremotros
+												// nulos.
+			throw new BadRequestException("Se tiene que poner algo en el subject o context para poder buscar.");
+
+		return query;
 	}
 
 	@PUT
@@ -484,6 +544,8 @@ public class BooksResource {
 		if (!security.isUserInRole("admin"))
 			throw new ForbiddenException("You are not allowed to delete a book");
 		System.out.println("Eres admin");
+		
+		setAdministrator(security.isUserInRole("admin"));
 		
 		ValidateBookforUpdate(book);
 		System.out.println("Book validado");
@@ -538,7 +600,8 @@ public class BooksResource {
 		
 		return book;
 	}
-	
+
+
 	private void ValidateBookforUpdate(Books book) {
 		System.out.println("Dentro del validate");
 		if (book.getTitle()!= null && book.getTitle().length() > 80)
@@ -614,10 +677,13 @@ public class BooksResource {
 	@Path("/reviews")
 	@Consumes(MediaType.BOOKS_API_REVIEWS)
 	@Produces(MediaType.BOOKS_API_REVIEWS)
-	public Reviews createReview( Reviews review) {
+	public Reviews createReview(@PathParam("bookid") String bookid, Reviews review) {
 		if (!security.isUserInRole("registered"))
 			throw new ForbiddenException("You are not allowed to create reviews for a book");
+		
 		System.out.println("Eres el registred");
+		
+		setRegistered(security.isUserInRole("registered"));
 		
 		ValidateReview(review);
 		System.out.println("Review validada");
@@ -633,29 +699,18 @@ public class BooksResource {
 		
 		PreparedStatement stmt = null;
 		PreparedStatement stmt2 = null;
-		boolean truedate;
-		
-		if( review.getDateupdate() !=null)
-			 truedate=false;
-		else
-			 truedate=true;
-		
+
 		System.out.println("Conociemiento de Dateupdate");
 		
 		try{
-			String sql= buildInsertReview(truedate);
+			String sql= buildInsertReview();
 			stmt=conn.prepareStatement(sql,Statement.RETURN_GENERATED_KEYS);
 			
-			if(truedate){
-				stmt.setString(1, review.getUsername());
-				stmt.setString(2, review.getText());
-				stmt.setInt(3, review.getBookid());
-				stmt.setDate(4, (Date) review.getDateupdate());
-			}else{
-				stmt.setString(1, review.getUsername());
-				stmt.setString(2, review.getText());
-				stmt.setInt(3, review.getBookid());
-			}
+			String tmp = security.getUserPrincipal().getName();
+			//stmt.setString(1, security.getUserPrincipal().getName());			
+			stmt.setString(1, tmp);
+			stmt.setString(2, review.getText());
+			stmt.setInt(3, review.getBookid());
 
 			
 			stmt.executeUpdate();// Ejecuto la actualización
@@ -682,10 +737,10 @@ public class BooksResource {
 			sql= locateReview();
 			System.out.println("Query para ver la review: "+sql);
 			stmt2=conn.prepareStatement(sql);
-			stmt2.setInt(1, review.getBookid());
-			stmt2.setString(2, review.getUsername());
-			System.out.println("QLe metemos bookid: "+review.getBookid());
-			System.out.println("Lemetemos Username: "+review.getUsername());
+			stmt2.setString(1, bookid);
+			stmt2.setString(2, tmp);
+			System.out.println("QLe metemos bookid: "+bookid);
+			System.out.println("Lemetemos Username: "+tmp);
 
 			
 			ResultSet rs = stmt2.executeQuery();
@@ -696,11 +751,12 @@ public class BooksResource {
 				System.out.println("Miramos contestacion query");
 
 				review.setBookid(rs.getInt("bookid"));
+				review.setReviewid(rs.getInt("reviewid"));
 				review.setDateupdate(rs.getDate("dateupdate"));
 				review.setText(rs.getString("text"));
 				review.setUsername(rs.getString("username"));
 			} else {
-				throw new BadRequestException("Can't create a Review");
+				throw new BadRequestException("Can't view the Review");
 			}
 			
 			
@@ -763,11 +819,8 @@ public class BooksResource {
 		}
 	}
 
-	private String buildInsertReview(boolean truedate) {
-		if (truedate)
-			return "insert into reviews (username,text,bookid,dateupdate) values (?,?,?,?);";
-		else
-			return "insert into reviews (username,text,bookid) values (?,?,?);";
+	private String buildInsertReview() {
+		return "insert into reviews (username,text,bookid) values (?,?,?);";
 	}
 	
 	private Reviews getReviewFromDatabase(String username, int bookid ){
@@ -822,16 +875,11 @@ public class BooksResource {
 		return"select * from reviews where bookid=? and username=?;";
 	}
 
-	private void ValidateReview(Reviews review) {//Para poder crear una reseña tiene que  aporbar todos los if
-		if (review.getUsername() == null)
-			throw new BadRequestException("Username can't be null.");
+	private void ValidateReview(Reviews review) {//Para poder crear una reseña tiene que  aporbar todos los if		
 		if (review.getText() == null)
 			throw new BadRequestException("Text can't be null.");
 		if (review.getBookid() == 0)
 			throw new BadRequestException("Bookid can't be 0.");
-		if (review.getUsername().length() > 20)
-			throw new BadRequestException(
-					"Username can't be greater than 20 characters.");
 		if (review.getText().length() > 500)
 			throw new BadRequestException(
 					"Text can't be greater than 500 characters.");
@@ -849,8 +897,11 @@ public class BooksResource {
 	public Reviews updateReview(@QueryParam("username") String username,
 			@QueryParam("bookid") int bookid, Reviews review){
 		
-		//if (!security.isUserInRole("register"))
-		//	throw new ForbiddenException("You are not allowed to update a review");
+		if (!security.isUserInRole("register"))
+			throw new ForbiddenException("You are not allowed to update a review");
+		
+		setRegistered(security.isUserInRole("registered"));
+		
 		validateReviewfroUpdate(review);
 		
 		Connection conn = null;
@@ -868,9 +919,8 @@ public class BooksResource {
 			stmt = conn.prepareStatement(sql);
 			
 			stmt.setString(1, review.getText());
-			stmt.setDate(2, (Date) review.getDateupdate());
-			stmt.setInt(3, bookid);
-			stmt.setString(4, username);
+			stmt.setInt(2, bookid);
+			stmt.setString(3, username);
 
 			int rows = stmt.executeUpdate();
 			if (rows == 1)
@@ -897,7 +947,7 @@ public class BooksResource {
 
 
 	private String buildUpdateReview() {
-		return "update reviews set  text=ifnull(?, text), dateupdate=ifnull(?, dateupdate) where bookid=? and username=?;";
+		return "update reviews set  text=ifnull(?, text) where bookid=? and username=?;";
 	}
 
 	private void validateReviewfroUpdate(Reviews review) {
@@ -917,8 +967,10 @@ public class BooksResource {
 	public void deleteReview(@QueryParam("username") String username,
 			@QueryParam("bookid") int bookid){
 		
-		if (!security.isUserInRole("admin"))
+		if (!security.isUserInRole("registered"))
 			throw new ForbiddenException("You are not allowed to delete a book");
+		
+		setRegistered(security.isUserInRole("registered"));
 		
 		System.out.println("Eres el admin");
 		Connection conn = null;
@@ -964,6 +1016,22 @@ public class BooksResource {
 
 	private String buildDeleteReview() {
 		return "delete from reviews where username=? and bookid=?;";
+	}
+
+	public boolean isAdministrator() {
+		return administrator;
+	}
+
+	public void setAdministrator(boolean administrator) {
+		this.administrator = administrator;
+	}
+
+	public boolean isRegistered() {
+		return registered;
+	}
+
+	public void setRegistered(boolean registered) {
+		this.registered = registered;
 	}
 	
 	

@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">BooksMainActivity</string>
+    <string name="l_author">Search Author</string>
+    <string name="l_search">Search</string>
+</resources>

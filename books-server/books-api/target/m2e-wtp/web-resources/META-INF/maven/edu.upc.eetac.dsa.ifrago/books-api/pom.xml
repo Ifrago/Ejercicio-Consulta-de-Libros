@@ -46,6 +46,11 @@
       <groupId>org.glassfish.jersey.containers</groupId>
       <artifactId>jersey-container-servlet-core</artifactId>
     </dependency>
+     <dependency>
+    	<groupId>com.thetransactioncompany</groupId>
+    	<artifactId>cors-filter</artifactId>
+    	<version>1.9.2</version>
+    </dependency>
   </dependencies>
   <build>
     <finalName>books-api</finalName>
