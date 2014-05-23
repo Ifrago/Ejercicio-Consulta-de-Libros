@@ -12,7 +12,7 @@ public class BookRootAPIResource {
 	@Context
 	SecurityContext security;
 	
-	private boolean administrador, registered;
+	private boolean admin, registered;
 	
 	
 	@GET
@@ -22,10 +22,10 @@ public class BookRootAPIResource {
 	}
 	
 	public boolean isAdministrador(){
-		return this.administrador;
+		return this.admin;
 	}
 	public void setAdministrador(boolean administrador){
-		this.administrador=administrador;
+		this.admin=administrador;
 	}
 	
 	public boolean isRegistered(){

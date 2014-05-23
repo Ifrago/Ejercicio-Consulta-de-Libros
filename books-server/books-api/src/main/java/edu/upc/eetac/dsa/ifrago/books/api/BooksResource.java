@@ -43,13 +43,16 @@ public class BooksResource {
 	@Context
 	SecurityContext security;
 
-	private boolean administrator, registered;
+	private boolean admin, registered;
 
 	@GET
 	@Produces(MediaType.BOOKS_API_BOOKS_COLLECTION)
 	public BooksCollection getBooks(@QueryParam("length") int length,
 			@QueryParam("after") int after) {
 
+		setAdministrator(security.isUserInRole("admin"));
+		
+		System.out.println("Dentro el metodo getBooks con length: "+length+" y after: "+after);
 		BooksCollection books = new BooksCollection();
 
 		Connection conn = null;
@@ -61,22 +64,11 @@ public class BooksResource {
 		}
 
 		PreparedStatement stmt = null;
+		System.out.println("Conexion BD establecida");
 
 		try {
 			boolean updateFromLast = after > 0;
-			stmt = conn.prepareStatement(buildGetBooksQuery(updateFromLast));// Para
-																				// preparar
-																				// la
-																				// query
-																				// con
-																				// el
-																				// metodo
-																				// buildGetStingsQuery
-																				// (
-																				// metodo
-																				// de
-																				// abajo
-																				// )
+			stmt = conn.prepareStatement(buildGetBooksQuery(updateFromLast));
 			if (updateFromLast) {
 				if (length == 0) {
 					stmt.setInt(1, after);
@@ -92,9 +84,11 @@ public class BooksResource {
 				else
 					stmt.setInt(1, length);
 			}
-
+			
+			System.out.println("La query es: "+ stmt);
 			ResultSet rs = stmt.executeQuery();
 			while (rs.next()) {
+				System.out.println("libro cogido");
 				Books book = new Books();
 
 				book.setId(rs.getInt("bookid"));
@@ -114,6 +108,7 @@ public class BooksResource {
 				ResultSet rsr = stmtr.executeQuery();
 
 				while (rsr.next()) {
+					System.out.println("Review cogida");
 					Reviews review = new Reviews();
 					review.setReviewid(rsr.getInt("reviewid"));
 					review.setDateupdate(rsr.getDate("dateupdate"));
@@ -159,7 +154,8 @@ public class BooksResource {
 	public Books createBook(Books book) {// Dates can are null
 		if (!security.isUserInRole("admin"))
 			throw new ForbiddenException("You are not allowed to create a book");
-
+		
+		
 		ValidateBook(book);
 
 		Connection conn = null;
@@ -944,22 +940,7 @@ public class BooksResource {
 		try {
 
 			// Para hacer que un usuario no haga dos reseñas en un mismo libro
-			System.out.println("Miramos que sea la autora del review");
-			/*
-			 * stmtV = conn.prepareStatement(locateReviewWithReviewID());
-			 * stmtV.setInt(1, Integer.valueOf(bookid)); stmtV.setInt(2,
-			 * Integer.valueOf(reviewid));
-			 * System.out.println(" Query:  "+stmtV); ResultSet rsV =
-			 * stmtV.executeQuery(); System.out.println(" Query RS:  "+rsV); if
-			 * (rsV.next()) { System.out.println("No es la propietario");
-			 * if(security.getUserPrincipal().getName()==
-			 * rsV.getString("username")) throw new ForbiddenException(
-			 * "You are not allowed to modify this review.");
-			 * 
-			 * }
-			 */
 			System.out.println("Es elpropietario");
-			// stmt.close();
 			String sql = buildUpdateReview();
 			stmt = conn.prepareStatement(sql);
 
@@ -1085,11 +1066,11 @@ public class BooksResource {
 	}
 
 	public boolean isAdministrator() {
-		return administrator;
+		return admin;
 	}
 
 	public void setAdministrator(boolean administrator) {
-		this.administrator = administrator;
+		this.admin = administrator;
 	}
 
 	public boolean isRegistered() {

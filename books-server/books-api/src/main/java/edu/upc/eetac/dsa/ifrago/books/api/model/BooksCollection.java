@@ -15,9 +15,10 @@ import edu.upc.eetac.dsa.ifrago.books.api.MediaType;
 
 public class BooksCollection {
 	@InjectLinks({
-		@InjectLink(resource = BooksResource.class, style = Style.ABSOLUTE, rel = "create-sting", title = "Create book", type = MediaType.BOOKS_API_BOOKS),
-		@InjectLink(value = "/stings?before={before}", style = Style.ABSOLUTE, rel = "previous", title = "Previous book", type = MediaType.BOOKS_API_BOOKS_COLLECTION, bindings = { @Binding(name = "before", value = "${instance.afeterbook}") }),
-		@InjectLink(value = "/stings?after={after}", style = Style.ABSOLUTE, rel = "current", title = "Newest stings", type = MediaType.BOOKS_API_BOOKS_COLLECTION, bindings = { @Binding(name = "after", value = "${instance.beforebook}") }) })
+		@InjectLink(resource = BooksResource.class, style = Style.ABSOLUTE, rel = "self", title = "books", type = MediaType.BOOKS_API_BOOKS_COLLECTION),
+		@InjectLink(resource = BooksResource.class, style = Style.ABSOLUTE, condition="${resource.administrator}", rel = "create-book", title = "Create book", type = MediaType.BOOKS_API_BOOKS, method="createBook"),
+		@InjectLink(resource = BooksResource.class, style = Style.ABSOLUTE, rel = "book", title = "book", type = MediaType.BOOKS_API_BOOKS)
+		})
 private List<Link> links;
 	
 	private List<Books> books;

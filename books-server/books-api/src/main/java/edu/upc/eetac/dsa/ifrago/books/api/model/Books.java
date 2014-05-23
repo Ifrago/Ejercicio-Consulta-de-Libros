@@ -19,7 +19,10 @@ import edu.upc.eetac.dsa.ifrago.books.api.MediaType;
 
 public class Books {
 	@InjectLinks({
-		@InjectLink(resource = BooksResource.class, style = Style.ABSOLUTE, rel = "self edit", title = "Book", type = MediaType.BOOKS_API_BOOKS, method = "getBook", bindings = @Binding(name = "bookid", value = "${instance.id}")) })
+		@InjectLink(resource = BooksResource.class, style = Style.ABSOLUTE, rel = "self edit", title = "Book", type = MediaType.BOOKS_API_BOOKS, method = "getBook", bindings = @Binding(name = "bookid", value = "${instance.id}")), 
+		@InjectLink(resource = BooksResource.class, style = Style.ABSOLUTE, rel = "create-book", title = "Create Book", type = MediaType.BOOKS_API_BOOKS, method = "createBook"), 
+		@InjectLink(resource = BooksResource.class, style = Style.ABSOLUTE, rel = "search author", title = "Search", type = MediaType.BOOKS_API_BOOKS_COLLECTION, method = "searchByAuthorBook", bindings ={ @Binding(name = "author", value = "${instance.author}"),@Binding(name = "title", value = "${instance.title}")}) 
+	})
 	private List<Link> links;
 	int id=0;
 	String title=null;

@@ -16,9 +16,13 @@ import edu.upc.eetac.dsa.ifrago.books.api.MediaType;
 public class Reviews {
 	@InjectLinks({
 		@InjectLink(resource = BooksResource.class, rel = "create-review", title = "Book", type = MediaType.BOOKS_API_BOOKS, method = "createReview"),
-		@InjectLink(resource = BooksResource.class, style = Style.ABSOLUTE,condition="${resource.registered}", rel = "create-review", title = "Book", type = MediaType.BOOKS_API_BOOKS, method = "createReview") })
+		@InjectLink(resource = BooksResource.class, style = Style.ABSOLUTE, rel = "create-review", title = "Book", type = MediaType.BOOKS_API_BOOKS, method = "createReview"),
+		@InjectLink(resource = BooksResource.class, style = Style.ABSOLUTE, rel = "update-review", title = "updateBook", type = MediaType.BOOKS_API_BOOKS, method = "updateReview", bindings ={ @Binding(name = "reviewid", value = "${instance.reviewid}"),@Binding(name = "bookid", value = "${instance.bookid}")}),
+		@InjectLink(resource = BooksResource.class, style = Style.ABSOLUTE, rel = "delete-review", title = "deleteBook", type = MediaType.BOOKS_API_BOOKS, method = "deleteReview", bindings ={ @Binding(name = "reviewid", value = "${instance.reviewid}"),@Binding(name = "bookid", value = "${instance.bookid}")})
+
+	})
 	private List<Link> links;
-	
+	//condition="${resource.registered}",
 	int reviewid= 0;
 	String username=null;
 	Date dateupdate=null;
